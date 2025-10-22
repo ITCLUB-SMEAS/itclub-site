@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 type TimeLeft = {
   total: number;
@@ -30,23 +30,47 @@ const calculateTimeLeft = (target: number): TimeLeft => {
 };
 
 const formatTwoDigits = (value: number) => value.toString().padStart(2, "0");
+const STORAGE_KEY = "comingSoonTargetTimestamp";
 
 export default function Home() {
-  const targetTimestampRef = useRef(Date.now() + 45 * DAY);
-
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() =>
-    calculateTimeLeft(targetTimestampRef.current)
-  );
+  const [targetTimestamp, setTargetTimestamp] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
 
   useEffect(() => {
+    let storedValue: number | null = null;
+    if (typeof window !== "undefined") {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? Number.parseInt(raw, 10) : NaN;
+      if (Number.isFinite(parsed)) {
+        storedValue = parsed;
+      }
+    }
+
+    const now = Date.now();
+    const effectiveTimestamp =
+      storedValue && storedValue > now ? storedValue : now + 45 * DAY;
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, effectiveTimestamp.toString());
+    }
+
+    setTargetTimestamp(effectiveTimestamp);
+    setTimeLeft(calculateTimeLeft(effectiveTimestamp));
+  }, []);
+
+  useEffect(() => {
+    if (!targetTimestamp) {
+      return;
+    }
+
     const interval = setInterval(() => {
-      setTimeLeft(calculateTimeLeft(targetTimestampRef.current));
+      setTimeLeft(calculateTimeLeft(targetTimestamp));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [targetTimestamp]);
 
-  const isComplete = timeLeft.total <= 0;
+  const isComplete = timeLeft ? timeLeft.total <= 0 : false;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 font-sans text-white">
@@ -65,7 +89,13 @@ export default function Home() {
           </p>
         </div>
 
-        {isComplete ? (
+        {!timeLeft ? (
+          <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-4">
+            {["Hari", "Jam", "Menit", "Detik"].map((label) => (
+              <TimeCard key={label} value="--" label={label} />
+            ))}
+          </div>
+        ) : isComplete ? (
           <div className="w-full rounded-2xl border border-white/20 bg-white/5 p-8 backdrop-blur">
             <p className="text-lg font-medium text-white">
               Waktunya tiba — situs kami sudah siap!
