@@ -1,103 +1,109 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+type TimeLeft = {
+  total: number;
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+};
+
+const MILLISECOND = 1000;
+const MINUTE = 60 * MILLISECOND;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+const calculateTimeLeft = (target: number): TimeLeft => {
+  const difference = target - Date.now();
+  if (difference <= 0) {
+    return { total: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
+  }
+
+  const days = Math.floor(difference / DAY);
+  const hours = Math.floor((difference % DAY) / HOUR);
+  const minutes = Math.floor((difference % HOUR) / MINUTE);
+  const seconds = Math.floor((difference % MINUTE) / MILLISECOND);
+
+  return { total: difference, days, hours, minutes, seconds };
+};
+
+const formatTwoDigits = (value: number) => value.toString().padStart(2, "0");
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const targetTimestampRef = useRef(Date.now() + 45 * DAY);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() =>
+    calculateTimeLeft(targetTimestampRef.current)
+  );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(calculateTimeLeft(targetTimestampRef.current));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const isComplete = timeLeft.total <= 0;
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 font-sans text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.35),transparent_55%)]" />
+      <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-4xl flex-col items-center justify-center gap-12 px-6 py-16 text-center">
+        <div className="space-y-4">
+          <span className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-300">
+            Coming Soon
+          </span>
+          <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">
+            Sesuatu yang istimewa akan hadir dalam 45 hari
+          </h1>
+          <p className="mx-auto max-w-xl text-sm text-slate-300 sm:text-base">
+            Kami sedang menyiapkan pengalaman baru untukmu. Simpan tanggalnya dan
+            kembali lagi untuk mengetahui kabar terbarunya.
+          </p>
+        </div>
+
+        {isComplete ? (
+          <div className="w-full rounded-2xl border border-white/20 bg-white/5 p-8 backdrop-blur">
+            <p className="text-lg font-medium text-white">
+              Waktunya tiba — situs kami sudah siap!
+            </p>
+          </div>
+        ) : (
+          <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-4">
+            <TimeCard value={timeLeft.days.toString()} label="Hari" />
+            <TimeCard value={formatTwoDigits(timeLeft.hours)} label="Jam" />
+            <TimeCard value={formatTwoDigits(timeLeft.minutes)} label="Menit" />
+            <TimeCard value={formatTwoDigits(timeLeft.seconds)} label="Detik" />
+          </div>
+        )}
+
+        <div className="mx-auto max-w-md space-y-3 text-sm text-slate-400">
+          <p>
+            Ingin jadi yang pertama tahu? Pantau terus situs ini atau ikuti kanal
+            media sosial kami untuk pembaruan terbaru.
+          </p>
+          <p>Terima kasih sudah bersabar menunggu!</p>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
+
+type TimeCardProps = {
+  value: string;
+  label: string;
+};
+
+const TimeCard = ({ value, label }: TimeCardProps) => {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-sm">
+      <div className="text-4xl font-semibold sm:text-5xl">{value}</div>
+      <div className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-300">
+        {label}
+      </div>
+    </div>
+  );
+};
